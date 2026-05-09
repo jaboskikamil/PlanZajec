@@ -1,0 +1,177 @@
+@page "/timetable/{viewType}/{id:int}"
+@using UniversityTimetable.Models
+@using UniversityTimetable.Services
+@inject TimetableService TimetableService
+@rendermode InteractiveServer
+
+<PageTitle>Plan Zajęć - @DisplayName</PageTitle>
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">@DisplayName</h2>
+        <div class="d-flex align-items-center">
+            <button class="btn btn-outline-secondary me-2" @onclick="GoPreviousDay">
+                <i class="bi bi-chevron-left"></i> Poprzedni Dzień
+            </button>
+            <span class="badge bg-primary fs-5 px-3 py-2">@GetPolishDayName(currentDay)</span>
+            <button class="btn btn-outline-secondary ms-2" @onclick="GoNextDay">
+                Następny Dzień <i class="bi bi-chevron-right"></i>
+            </button>
+        </div>
+    </div>
+
+    @if (timetableEntries == null)
+    {
+        <p class="text-center"><em>Ładowanie planu...</em></p>
+    }
+    else if (!timetableEntries.Any())
+    {
+        <div class="card shadow-sm border-0 bg-light p-5 text-center">
+            <div class="card-body">
+                <i class="bi bi-calendar-x display-1 text-muted mb-3 d-block"></i>
+                <h4>Brak zajęć w tym dniu.</h4>
+                <p class="text-muted">Skorzystaj z przycisków powyżej, aby sprawdzić inny dzień.</p>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover align-middle timetable-table">
+                <thead class="table-dark">
+                    <tr>
+                        <th style="width: 15%">Czas</th>
+                        <th style="width: 35%">Przedmiot</th>
+                        <th style="width: 25%">@(IsLecturerView ? "Grupa" : "Wykładowca")</th>
+                        <th style="width: 15%">Typ</th>
+                        <th style="width: 10%">Sala</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var entry in timetableEntries)
+                    {
+                        <tr>
+                            <td class="fw-bold">@entry.StartTime.ToString(@"hh\:mm") - @entry.EndTime.ToString(@"hh\:mm")</td>
+                            <td>
+                                <div class="subject-name">@entry.SubjectName</div>
+                            </td>
+                            <td>
+                                @(IsLecturerView ? entry.Group.Name : entry.Lecturer.FullName)
+                            </td>
+                            <td>
+                                <span class="badge @GetTypeBadgeClass(entry.Type)">@entry.Type</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">@entry.Room</span>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+
+    <div class="mt-4 text-center">
+        <a href="@(IsLecturerView ? "/lecturers" : "/groups")" class="btn btn-link text-decoration-none">
+            <i class="bi bi-arrow-left"></i> Powrót do wyboru
+        </a>
+    </div>
+</div>
+
+<style>
+    .timetable-table {
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    .subject-name {
+        font-weight: 600;
+        color: #333;
+    }
+</style>
+
+@code {
+    [Parameter] public string viewType { get; set; } = string.Empty;
+    [Parameter] public int id { get; set; }
+
+    private List<TimetableEntry>? timetableEntries;
+    private Models.DayOfWeek currentDay = Models.DayOfWeek.Monday;
+    private string DisplayName = "Plan";
+    private bool IsLecturerView => viewType.ToLower() == "lecturer";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var today = DateTime.Today.DayOfWeek;
+        if (today == System.DayOfWeek.Saturday || today == System.DayOfWeek.Sunday)
+        {
+            currentDay = Models.DayOfWeek.Monday;
+        }
+        else
+        {
+            currentDay = (Models.DayOfWeek)((int)today);
+        }
+
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        if (IsLecturerView)
+        {
+            var lecturer = await TimetableService.GetLecturerByIdAsync(id);
+            DisplayName = lecturer?.FullName ?? "Nieznany Wykładowca";
+            timetableEntries = await TimetableService.GetTimetableForLecturerAsync(id, currentDay);
+        }
+        else
+        {
+            var group = await TimetableService.GetGroupByIdAsync(id);
+            DisplayName = $"Grupa {group?.Name ?? "Nieznana"}";
+            timetableEntries = await TimetableService.GetTimetableForGroupAsync(id, currentDay);
+        }
+    }
+
+    private async Task GoPreviousDay()
+    {
+        int dayNum = (int)currentDay;
+        dayNum--;
+        if (dayNum < 1) dayNum = 7;
+        currentDay = (Models.DayOfWeek)dayNum;
+        await LoadData();
+    }
+
+    private async Task GoNextDay()
+    {
+        int dayNum = (int)currentDay;
+        dayNum++;
+        if (dayNum > 7) dayNum = 1;
+        currentDay = (Models.DayOfWeek)dayNum;
+        await LoadData();
+    }
+
+    private string GetPolishDayName(Models.DayOfWeek day)
+    {
+        return day switch
+        {
+            Models.DayOfWeek.Monday => "Poniedziałek",
+            Models.DayOfWeek.Tuesday => "Wtorek",
+            Models.DayOfWeek.Wednesday => "Środa",
+            Models.DayOfWeek.Thursday => "Czwartek",
+            Models.DayOfWeek.Friday => "Piątek",
+            Models.DayOfWeek.Saturday => "Sobota",
+            Models.DayOfWeek.Sunday => "Niedziela",
+            _ => day.ToString()
+        };
+    }
+
+    private string GetTypeBadgeClass(string type)
+    {
+        return type.ToLower() switch
+        {
+            "wykład" => "bg-primary text-white",
+            "laboratorium" => "bg-danger text-white",
+            "ćwiczenia" => "bg-success text-white",
+            "lektorat" => "bg-warning text-dark",
+            _ => "bg-info text-white"
+        };
+    }
+}

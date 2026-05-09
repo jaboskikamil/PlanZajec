@@ -1,0 +1,113 @@
+@page "/groups"
+@using UniversityTimetable.Models
+@using UniversityTimetable.Services
+@inject TimetableService TimetableService
+@rendermode InteractiveServer
+
+<PageTitle>Wybór Grupy</PageTitle>
+
+<div class="container mt-4">
+    <h1 class="mb-4 text-center">Wybierz Grupę</h1>
+
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-4">
+            <!-- Step 1: Year -->
+            <div class="mb-4">
+                <label class="form-label font-weight-bold">Wybierz Rok:</label>
+                <div class="list-group">
+                    @foreach (var year in years ?? new List<int>())
+                    {
+                        <button type="button" 
+                                class="list-group-item list-group-item-action @(selectedYear == year ? "active" : "")"
+                                @onclick="() => OnYearSelected(year)">
+                            Rok @year
+                        </button>
+                    }
+                </div>
+            </div>
+
+            <!-- Step 2: Semester -->
+            @if (selectedYear.HasValue)
+            {
+                <div class="mb-4 animate-in">
+                    <label class="form-label font-weight-bold">Wybierz Semestr:</label>
+                    <div class="list-group">
+                        @foreach (var semester in semesters ?? new List<int>())
+                        {
+                            <button type="button" 
+                                    class="list-group-item list-group-item-action @(selectedSemester == semester ? "active" : "")"
+                                    @onclick="() => OnSemesterSelected(semester)">
+                                Semestr @semester
+                            </button>
+                        }
+                    </div>
+                </div>
+            }
+
+            <!-- Step 3: Group -->
+            @if (selectedSemester.HasValue)
+            {
+                <div class="mb-4 animate-in">
+                    <label class="form-label font-weight-bold">Wybierz Grupę:</label>
+                    <div class="list-group">
+                        @foreach (var group in groups ?? new List<Group>())
+                        {
+                            <button type="button" 
+                                    class="list-group-item list-group-item-action"
+                                    @onclick="() => SelectGroup(group.Id)">
+                                Grupa @group.Name
+                            </button>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+    .animate-in {
+        animation: fadeIn 0.4s ease-in-out;
+    }
+
+    @@keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+
+@code {
+    private List<int>? years;
+    private List<int>? semesters;
+    private List<Group>? groups;
+
+    private int? selectedYear;
+    private int? selectedSemester;
+
+    [Inject]
+    private NavigationManager Navigation { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        years = await TimetableService.GetYearsAsync();
+    }
+
+    private async Task OnYearSelected(int year)
+    {
+        selectedYear = year;
+        selectedSemester = null;
+        groups = null;
+        semesters = await TimetableService.GetSemestersAsync(year);
+    }
+
+    private async Task OnSemesterSelected(int semester)
+    {
+        selectedSemester = semester;
+        groups = await TimetableService.GetGroupsAsync(selectedYear!.Value, semester);
+    }
+
+    private void SelectGroup(int groupId)
+    {
+        Navigation.NavigateTo($"/timetable/group/{groupId}");
+    }
+}

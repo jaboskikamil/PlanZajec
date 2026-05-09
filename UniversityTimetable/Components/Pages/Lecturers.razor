@@ -1,0 +1,107 @@
+@page "/lecturers"
+@using UniversityTimetable.Models
+@using UniversityTimetable.Services
+@inject TimetableService TimetableService
+@rendermode InteractiveServer
+
+<PageTitle>Wybór Wykładowcy</PageTitle>
+
+<div class="container mt-4">
+    <h1 class="mb-4 text-center">Wybierz Wykładowcę</h1>
+
+    <div class="row justify-content-center mb-4">
+        <div class="col-md-6">
+            <div class="input-group">
+                <span class="input-group-text" id="search-addon">
+                    <i class="bi bi-search"></i>
+                </span>
+                <input type="text" class="form-control form-control-lg" 
+                       placeholder="Szukaj po imieniu lub nazwisku..." 
+                       @bind="SearchTerm" @bind:event="oninput" />
+            </div>
+        </div>
+    </div>
+
+    @if (lecturers == null)
+    {
+        <p class="text-center"><em>Ładowanie...</em></p>
+    }
+    else if (!lecturers.Any())
+    {
+        <div class="alert alert-info text-center" role="alert">
+            Nie znaleziono wykładowców pasujących do wyszukiwania.
+        </div>
+    }
+    else
+    {
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+            @foreach (var lecturer in lecturers)
+            {
+                <div class="col">
+                    <div class="card h-100 shadow-sm lecturer-card" @onclick="() => SelectLecturer(lecturer.Id)">
+                        <div class="card-body d-flex align-items-center">
+                            <div class="flex-shrink-0 me-3">
+                                <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; font-size: 1.2rem;">
+                                    @lecturer.LastName[0]
+                                </div>
+                            </div>
+                            <div>
+                                <h5 class="card-title mb-0">@lecturer.FullName</h5>
+                                <p class="card-text text-muted small">Kliknij, aby zobaczyć plan</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<style>
+    .lecturer-card {
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .lecturer-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        border-color: #0d6efd;
+    }
+</style>
+
+@code {
+    private List<Lecturer>? lecturers;
+    private string _searchTerm = string.Empty;
+
+    private string SearchTerm
+    {
+        get => _searchTerm;
+        set
+        {
+            if (_searchTerm != value)
+            {
+                _searchTerm = value;
+                _ = UpdateLecturerList();
+            }
+        }
+    }
+
+    [Inject]
+    private NavigationManager Navigation { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await UpdateLecturerList();
+    }
+
+    private async Task UpdateLecturerList()
+    {
+        lecturers = await TimetableService.GetLecturersAsync(_searchTerm);
+        StateHasChanged();
+    }
+
+    private void SelectLecturer(int id)
+    {
+        Navigation.NavigateTo($"/timetable/lecturer/{id}");
+    }
+}

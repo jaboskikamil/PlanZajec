@@ -1,0 +1,7 @@
+UniversityTimetable/bin/
+UniversityTimetable/obj/
+*.db
+*.db-shm
+*.db-wal
+.vs/
+.vscode/
