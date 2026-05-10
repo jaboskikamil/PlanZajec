@@ -9,7 +9,7 @@ public class Lecturer
     public string FirstName { get; set; } = string.Empty;
     [Required]
     public string LastName { get; set; } = string.Empty;
-    public string Title { get; set; } = string.Empty; // e.g. Dr., Prof.
+    public string Title { get; set; } = string.Empty; 
     
     public string FullName => $"{Title} {FirstName} {LastName}".Trim();
     
@@ -20,7 +20,7 @@ public class Group
 {
     public int Id { get; set; }
     [Required]
-    public string Name { get; set; } = string.Empty; // e.g. "Informatyka G1"
+    public string Name { get; set; } = string.Empty; 
     public int Year { get; set; }
     public int Semester { get; set; }
     
@@ -44,7 +44,7 @@ public class TimetableEntry
     [Required]
     public string SubjectName { get; set; } = string.Empty;
     public string Room { get; set; } = string.Empty;
-    public string Type { get; set; } = string.Empty; // e.g. Wykład, Ćwiczenia, Laboratorium
+    public string Type { get; set; } = string.Empty; 
     
     public DayOfWeek Day { get; set; }
     public TimeSpan StartTime { get; set; }

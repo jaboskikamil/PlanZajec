@@ -10,7 +10,7 @@ public static class DbInitializer
         context.Database.EnsureDeleted();
         context.Database.EnsureCreated();
 
-        // 🔹 WYKŁADOWCY
+      
         var lecturers = new[]
         {
             new Lecturer { FirstName = "Jan", LastName = "Kowalski", Title = "Dr inż." },
@@ -28,7 +28,7 @@ public static class DbInitializer
         context.Lecturers.AddRange(lecturers);
         context.SaveChanges();
 
-        // 🔹 GRUPY
+        
         var groups = new[]
         {
             new Group { Name = "G1.A", Year = 1, Semester = 1 },
@@ -42,7 +42,7 @@ public static class DbInitializer
         context.Groups.AddRange(groups);
         context.SaveChanges();
 
-        // 🔹 PRZYPISANIE PRZEDMIOTÓW
+       
         var lecturerSubjects = new Dictionary<int, List<string>>
         {
             { lecturers[0].Id, new List<string> { "Programowanie" } },
@@ -93,7 +93,7 @@ public static class DbInitializer
             foreach (var day in days)
             {
                 var start = new TimeSpan(8, 0, 0);
-                int lessonsCount = random.Next(2, 5); // 2–4 zajęcia
+                int lessonsCount = random.Next(2, 5); 
 
                 for (int i = 0; i < lessonsCount; i++)
                 {
